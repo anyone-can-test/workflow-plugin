@@ -1,5 +1,8 @@
 FROM jenkins:1.609.1
 
+ENV http_proxy http://172.21.81.28:6588
+ENV https_proxy http://172.21.81.28:6588
+
 USER root
 
 # installed maven package is still 3.0.5, pretty old
@@ -30,8 +33,9 @@ USER jenkins
 WORKDIR /tmp/files
 RUN git init --bare repo && cd repo-wc && git init && git add . && git -c user.email=demo@jenkins-ci.org -c user.name="Workflow Demo" commit -m 'demo' && git push ../repo master
 
+
 # Prepare local Maven repo. Note that $JENKINS_HOME is a volume so we cannot populate it now.
-RUN echo '<settings><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/simple/repo1-cache/</url><mirrorOf>central</mirrorOf></mirror></mirrors><localRepository>/usr/share/jenkins/ref/.m2/repository</localRepository></settings>' > /tmp/files/settings.xml
+RUN echo '<settings><proxies><proxy><active>true</active><protocol>http</protocol><host>172.21.81.28</host><port>6588</port></proxy></proxies><mirrors><mirror><id>central</id><url>http://repo.jenkins-ci.org/simple/repo1-cache/</url><mirrorOf>central</mirrorOf></mirror></mirrors><localRepository>/usr/share/jenkins/ref/.m2/repository</localRepository></settings>' > /tmp/files/settings.xml
 RUN cd repo-wc && /usr/local/maven/bin/mvn -s /tmp/files/settings.xml install && /usr/local/maven/bin/mvn -s /tmp/files/settings.xml -f sometests -Dmaven.test.failure.ignore clean install
 
 ADD JENKINS_HOME /usr/share/jenkins/ref
